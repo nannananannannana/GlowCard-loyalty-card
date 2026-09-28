@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GlowCard — My Loyalty Card</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#FFFFFF;--dark-green:#004837;--light-blue:#AEDDFD;
+  --light-green:#D8FFDF;--light-yellow:#F8FBC3;--light-pink:#FFE4E1;
+  --bright-green:#5FF49A;--bright-pink:#FD7E8B;--black:#00110C;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'IBM Plex Sans',Arial,sans-serif;background:var(--white);color:var(--black);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+
+.header{width:100%;background:var(--dark-green);color:var(--white);padding:30px 20px 22px;text-align:center;position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;top:-50px;right:-50px;width:160px;height:160px;border-radius:50%;background:var(--bright-green);opacity:.08;}
+.header-logo{font-size:28px;margin-bottom:4px;}
+.header h1{font-size:22px;font-weight:700;letter-spacing:.3px;}
+.header p{font-size:13px;font-weight:300;margin-top:4px;opacity:.85;}
+
+.wrap{width:100%;max-width:440px;padding:22px 16px;display:flex;flex-direction:column;gap:18px;}
+
+.nav{display:flex;background:var(--light-green);border-radius:14px;padding:4px;gap:4px;}
+.nav-btn{flex:1;padding:11px 6px;border:none;border-radius:11px;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:var(--dark-green);cursor:pointer;transition:.3s;}
+.nav-btn.active{background:var(--dark-green);color:var(--white);}
+
+.tab{display:none;flex-direction:column;gap:18px;}
+.tab.active{display:flex;}
+
+.loyalty-card{background:linear-gradient(135deg,var(--dark-green) 0%,#006B50 100%);border-radius:20px;padding:26px 22px 22px;color:var(--white);position:relative;overflow:hidden;}
+.loyalty-card::after{content:'';position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:var(--bright-green);opacity:.10;}
+.lc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.lc-top h2{font-size:17px;font-weight:600;}
+.lc-badge{background:var(--bright-green);color:var(--dark-green);font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;}
+
+.stamps{display:flex;justify-content:center;gap:14px;margin-bottom:20px;}
+.stamp{width:72px;height:72px;border-radius:16px;border:2.5px dashed rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:30px;transition:.35s;position:relative;}
+.stamp.filled{background:var(--bright-green);border-color:var(--bright-green);animation:pop .4s ease;}
+.stamp.filled .s-icon{filter:none;}
+.stamp .s-icon{font-size:28px;filter:grayscale(1) brightness(2);opacity:.35;}
+.stamp.filled .s-icon{opacity:1;filter:none;}
+.stamp.reward-stamp{border-color:var(--bright-pink);}
+.stamp.reward-stamp.filled{background:var(--bright-pink);border-color:var(--bright-pink);}
+.stamp-label{position:absolute;bottom:-18px;font-size:10px;font-weight:600;opacity:.5;}
+.stamp.filled .stamp-label{opacity:.8;}
+@keyframes pop{0%{transform:scale(.7)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+.progress-section{margin-bottom:2px;}
+.progress-labels{display:flex;justify-content:space-between;font-size:12px;font-weight:500;margin-bottom:6px;}
+.progress-bar-bg{height:8px;border-radius:6px;background:rgba(255,255,255,.15);overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:6px;background:var(--bright-green);transition:width .6s ease;}
+
+.stats{display:flex;gap:10px;}
+.stat-box{flex:1;background:var(--light-green);border-radius:14px;padding:16px 10px;text-align:center;}
+.stat-box .num{font-size:26px;font-weight:700;color:var(--dark-green);}
+.stat-box .label{font-size:11px;font-weight:500;color:var(--dark-green);margin-top:2px;}
+
+.qr-section{background:var(--light-yellow);border-radius:18px;padding:24px 18px;text-align:center;}
+.qr-section h3{font-size:15px;font-weight:600;color:var(--dark-green);margin-bottom:4px;}
+.qr-section p{font-size:12px;color:var(--black);opacity:.55;margin-bottom:14px;}
+#qr-canvas{background:var(--white);padding:14px;border-radius:14px;display:inline-block;box-shadow:0 2px 12px rgba(0,0,0,.06);}
+.qr-timer{margin-top:12px;font-size:13px;font-weight:500;color:var(--dark-green);}
+.qr-timer span{font-weight:700;}
+
+.reward-banner{display:none;background:linear-gradient(135deg,var(--bright-pink),#ff9aa2);border-radius:20px;padding:28px 20px 24px;text-align:center;color:var(--white);animation:pop .5s ease;}
+.reward-banner.show{display:block;}
+.reward-banner h3{font-size:22px;font-weight:700;}
+.reward-banner p{font-size:13px;margin-top:6px;opacity:.9;}
+
+.reward-options{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+.reward-opt{background:var(--white);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.2s;border:3px solid transparent;}
+.reward-opt:hover,.reward-opt.selected{border-color:var(--dark-green);transform:scale(1.02);}
+.reward-opt .ro-icon{font-size:28px;width:44px;height:44px;border-radius:12px;background:var(--light-pink);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.reward-opt .ro-text{text-align:left;}
+.reward-opt .ro-title{font-size:14px;font-weight:700;color:var(--dark-green);}
+.reward-opt .ro-desc{font-size:11px;color:var(--black);opacity:.55;margin-top:2px;}
+.btn-claim{margin-top:14px;background:var(--white);color:var(--bright-pink);border:none;padding:14px 36px;border-radius:30px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;opacity:.4;pointer-events:none;transition:.3s;}
+.btn-claim.enabled{opacity:1;pointer-events:auto;}
+
+.lb-card{background:var(--white);border-radius:18px;border:2px solid var(--light-green);overflow:hidden;}
+.lb-header{background:var(--dark-green);color:var(--white);padding:16px 18px;display:flex;align-items:center;gap:10px;}
+.lb-header .lb-icon{font-size:22px;}
+.lb-header h3{font-size:15px;font-weight:600;}
+.lb-list{padding:6px 0;}
+.lb-row{display:flex;align-items:center;padding:12px 18px;gap:12px;border-bottom:1px solid var(--light-green);}
+.lb-row:last-child{border-bottom:none;}
+.lb-rank{width:28px;height:28px;border-radius:50%;background:var(--light-green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--dark-green);flex-shrink:0;}
+.lb-row.me .lb-rank{background:var(--bright-green);}
+.lb-row.gold .lb-rank{background:var(--light-yellow);color:#b8860b;}
+.lb-name{flex:1;font-size:14px;font-weight:500;}
+.lb-row.me .lb-name{font-weight:700;color:var(--dark-green);}
+.lb-you-tag{font-size:10px;font-weight:700;background:var(--bright-green);color:var(--dark-green);padding:2px 8px;border-radius:10px;margin-left:6px;}
+.lb-visits{font-size:13px;font-weight:700;color:var(--dark-green);}
+.lb-bar-bg{width:60px;height:6px;border-radius:4px;background:var(--light-green);overflow:hidden;margin-left:6px;}
+.lb-bar-fill{height:100%;border-radius:4px;background:var(--bright-green);transition:width .5s;}
+.lb-empty{padding:30px;text-align:center;font-size:13px;opacity:.4;}
+.lb-note{text-align:center;font-size:11px;opacity:.35;margin-top:4px;}
+
+.history-section{background:var(--light-pink);border-radius:18px;padding:20px 18px;}
+.history-section h3{font-size:15px;font-weight:600;color:var(--dark-green);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.history-item{background:var(--white);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.history-item:last-child{margin-bottom:0;}
+.hi-icon{font-size:22px;}
+.hi-text{flex:1;}
+.hi-title{font-size:13px;font-weight:600;color:var(--dark-green);}
+.hi-date{font-size:11px;opacity:.45;margin-top:1px;}
+.history-empty{text-align:center;font-size:13px;opacity:.4;padding:12px 0;}
+
+.overlay{position:fixed;inset:0;background:var(--dark-green);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:30px;text-align:center;color:var(--white);}
+.overlay.hidden{display:none;}
+.overlay .o-logo{font-size:48px;margin-bottom:8px;}
+.overlay h2{font-size:26px;font-weight:700;margin-bottom:4px;}
+.overlay .brand{color:var(--bright-green);}
+.overlay p{font-size:14px;font-weight:300;opacity:.7;margin-bottom:28px;max-width:280px;}
+.overlay input{width:100%;max-width:300px;padding:14px 18px;border:2px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(255,255,255,.08);color:var(--white);font-family:inherit;font-size:15px;text-align:center;outline:none;margin-bottom:16px;}
+.overlay input::placeholder{color:rgba(255,255,255,.4);}
+.overlay button{background:var(--bright-green);color:var(--dark-green);border:none;padding:14px 48px;border-radius:30px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}
+
+.footer{margin-top:auto;padding:18px;text-align:center;font-size:11px;color:var(--black);opacity:.3;}
+</style>
+</head>
+<body>
+
+<!-- ===== SETUP ===== -->
+<div class="overlay" id="setup">
+  <div class="o-logo">💈</div>
+  <h2>Welcome to <span class="brand">GlowCard</span></h2>
+  <p>Your loyalty card for our salon. Collect 3 visits and pick a reward!</p>
+  <input type="text" id="nameInput" placeholder="Your first name" maxlength="30" autocomplete="off">
+  <button onclick="saveCustomer()">Get My GlowCard ✨</button>
+</div>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-logo">💈</div>
+  <h1 id="greeting">GlowCard</h1>
+  <p>Collect visits · Choose your reward</p>
+</div>
+
+<div class="wrap">
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchTab('card')">💈 My Card</button>
+    <button class="nav-btn" onclick="switchTab('lb')">🏆 Leaderboard</button>
+    <button class="nav-btn" onclick="switchTab('history')">🎁 Rewards</button>
+  </div>
+
+  <!-- ═══ TAB: MY CARD ═══ -->
+  <div class="tab active" id="tab-card">
+
+    <div class="loyalty-card">
+      <div class="lc-top">
+        <h2>Your Visits</h2>
+        <div class="lc-badge" id="visits-badge">0 / 3</div>
+      </div>
+      <div class="stamps" id="stamps"></div>
+      <div class="progress-section">
+        <div class="progress-labels">
+          <span>Progress</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-box"><div class="num" id="stat-visits">0</div><div class="label">Visits</div></div>
+      <div class="stat-box"><div class="num" id="stat-left">3</div><div class="label">Left</div></div>
+      <div class="stat-box"><div class="num" id="stat-rewards">0</div><div class="label">Rewards</div></div>
+    </div>
+
+    <div class="reward-banner" id="reward-banner">
+      <h3>🎉 You did it!</h3>
+      <p>Pick your reward below:</p>
+      <div class="reward-options" id="reward-options"></div>
+      <button class="btn-claim" id="btn-claim" onclick="claimReward()">Claim My Reward</button>
+    </div>
+
+    <div class="qr-section" id="qr-section">
+      <h3>Check-In QR Code</h3>
+      <p>Show this to your stylist to log your visit</p>
+      <div id="qr-canvas"></div>
+      <div class="qr-timer">Refreshes in <span id="timer">30</span>s</div>
+    </div>
+
+  </div>
+
+  <!-- ═══ TAB: LEADERBOARD ═══ -->
+  <div class="tab" id="tab-lb">
+    <div class="lb-card">
+      <div class="lb-header">
+        <span class="lb-icon">🏆</span>
+        <h3>Community Leaderboard</h3>
+      </div>
+      <div class="lb-list" id="lb-list">
+        <div class="lb-empty">No other members yet — be the first!</div>
+      </div>
+    </div>
+    <p class="lb-note">Names are anonymised for privacy. Only first name + initial shown.</p>
+  </div>
+
+  <!-- ═══ TAB: REWARD HISTORY ═══ -->
+  <div class="tab" id="tab-history">
+    <div class="history-section">
+      <h3>🎁 My Rewards</h3>
+      <div id="history-list">
+        <div class="history-empty">Complete 3 visits to earn your first reward!</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">GlowCard™ — Loyalty Rewards</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+const TOTAL = 3;
+
+const REWARDS = [
+  { id:'r1', icon:'💆‍♀️', title:'Free Keratin Treatment', desc:'A full keratin smoothing treatment — on the house' },
+  { id:'r2', icon:'✨', title:'Free Braids', desc:'Complimentary braiding session — any style you like' },
+  { id:'r3', icon:'🧴', title:'Product Gift', desc:'Pick a free hair care product to take home' },
+  { id:'r4', icon:'💧', title:'Free Deep Conditioning', desc:'Premium deep conditioning treatment for healthy hair' },
+  { id:'r5', icon:'🎁', title:'Surprise!', desc:'A mystery reward — let us surprise you!' }
+];
+
+let qrInstance=null, timerInterval=null, selectedReward=null;
+
+function getC(){ const r=localStorage.getItem('loyalty_customer'); return r?JSON.parse(r):null; }
+function setC(d){ localStorage.setItem('loyalty_customer',JSON.stringify(d)); }
+
+function publishToLeaderboard(c){
+  const lb=JSON.parse(localStorage.getItem('glowcard_leaderboard')||'{}');
+  lb[c.id]={name:c.name, visits:c.visits, totalRewards:c.totalRewards, lastActive:Date.now()};
+  localStorage.setItem('glowcard_leaderboard',JSON.stringify(lb));
+}
+
+function saveCustomer(){
+  const name=document.getElementById('nameInput').value.trim();
+  if(!name)return;
+  const id='GC-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).substring(2,6).toUpperCase();
+  const data={id,name,visits:0,totalRewards:0,rewardHistory:[]};
+  setC(data);
+  publishToLeaderboard(data);
+  document.getElementById('setup').classList.add('hidden');
+  render(data);startQR(data);
+}
+
+function switchTab(t){
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('active',['card','lb','history'][i]===t));
+  document.querySelectorAll('.tab').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='lb')renderLeaderboard();
+  if(t==='history')renderHistory();
+}
+
+function render(c){
+  document.getElementById('greeting').textContent='Hi, '+c.name+'! 💈';
+  document.getElementById('visits-badge').textContent=c.visits+' / '+TOTAL;
+  document.getElementById('stat-visits').textContent=c.visits;
+  document.getElementById('stat-left').textContent=Math.max(0,TOTAL-c.visits);
+  document.getElementById('stat-rewards').textContent=c.totalRewards;
+
+  const pct=Math.round((c.visits/TOTAL)*100);
+  document.getElementById('progress-pct').textContent=pct+'%';
+  document.getElementById('progress-fill').style.width=pct+'%';
+
+  const stampsEl=document.getElementById('stamps');
+  stampsEl.innerHTML='';
+  const labels=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+  for(let i=1;i<=TOTAL;i++){
+    const s=document.createElement('div');
+    s.className='stamp'+(i<=c.visits?' filled':'')+(i===TOTAL?' reward-stamp':'');
+    if(i<=c.visits){
+      s.innerHTML='<span class="s-icon">✂️</span>';
+    } else if(i===TOTAL){
+      s.innerHTML='<span class="s-icon">🎁</span>';
+    } else {
+      s.innerHTML='<span class="s-icon">💈</span>';
+    }
+    s.innerHTML+='<span class="stamp-label">'+(labels[i-1]||i)+'</span>';
+    stampsEl.appendChild(s);
+  }
+
+  const banner=document.getElementById('reward-banner');
+  if(c.visits>=TOTAL){
+    banner.classList.add('show');
+    document.getElementById('qr-section').style.display='none';
+    renderRewardOptions();
+  } else {
+    banner.classList.remove('show');
+    document.getElementById('qr-section').style.display='';
+    selectedReward=null;
+  }
+}
+
+function renderRewardOptions(){
+  const el=document.getElementById('reward-options');
+  el.innerHTML=REWARDS.map(r=>`
+    <div class="reward-opt" id="ro-${r.id}" onclick="selectReward('${r.id}')">
+      <div class="ro-icon">${r.icon}</div>
+      <div class="ro-text">
+        <div class="ro-title">${r.title}</div>
+        <div class="ro-desc">${r.desc}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('btn-claim').classList.remove('enabled');
+  selectedReward=null;
+}
+
+function selectReward(id){
+  selectedReward=id;
+  document.querySelectorAll('.reward-opt').forEach(o=>o.classList.remove('selected'));
+  document.getElementById('ro-'+id).classList.add('selected');
+  document.getElementById('btn-claim').classList.add('enabled');
+}
+
+function claimReward(){
+  if(!selectedReward)return;
+  const c=getC();
+  const reward=REWARDS.find(r=>r.id===selectedReward);
+  c.visits=0;
+  c.totalRewards+=1;
+  if(!c.rewardHistory)c.rewardHistory=[];
+  c.rewardHistory.unshift({reward:reward.title,icon:reward.icon,date:new Date().toLocaleDateString()});
+  setC(c);
+  publishToLeaderboard(c);
+  render(c);startQR(c);
+}
+
+function renderLeaderboard(){
+  const c=getC();
+  if(!c)return;
+  const lb=JSON.parse(localStorage.getItem('glowcard_leaderboard')||'{}');
+  let list=Object.entries(lb).map(([id,d])=>({id,name:d.name,visits:d.visits,rewards:d.totalRewards}));
+  list.sort((a,b)=>(b.rewards-a.rewards)||(b.visits-a.visits));
+
+  const el=document.getElementById('lb-list');
+  if(list.length===0){el.innerHTML='<div class="lb-empty">No members yet!</div>';return;}
+
+  el.innerHTML=list.map((m,i)=>{
+    const isMe=m.id===c.id;
+    const anonymised=m.name.charAt(0).toUpperCase()+m.name.slice(1,3)+'***';
+    const displayName=isMe?c.name:anonymised;
+    const rowClass='lb-row'+(isMe?' me':'')+(i===0?' gold':'');
+    const pct=Math.round((m.visits/TOTAL)*100);
+    return `<div class="${rowClass}">
+      <div class="lb-rank">${i+1}</div>
+      <div class="lb-name">${displayName}${isMe?'<span class="lb-you-tag">YOU</span>':''}</div>
+      <div class="lb-visits">${m.rewards}🎁 · ${m.visits}/${TOTAL}</div>
+      <div class="lb-bar-bg"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderHistory(){
+  const c=getC();if(!c)return;
+  const el=document.getElementById('history-list');
+  if(!c.rewardHistory||c.rewardHistory.length===0){
+    el.innerHTML='<div class="history-empty">Complete 3 visits to earn your first reward!</div>';
+    return;
+  }
+  el.innerHTML=c.rewardHistory.map(h=>`
+    <div class="history-item">
+      <div class="hi-icon">${h.icon}</div>
+      <div class="hi-text">
+        <div class="hi-title">${h.reward}</div>
+        <div class="hi-date">Claimed on ${h.date}</div>
+      </div>
+    </div>`).join('');
+}
+
+function generateToken(c){
+  const epoch30=Math.floor(Date.now()/30000);
+  return btoa(c.id+'|'+epoch30);
+}
+function startQR(c){
+  if(timerInterval)clearInterval(timerInterval);
+  function refresh(){
+    const token=generateToken(c);
+    const qrData=JSON.stringify({id:c.id,name:c.name,token:token});
+    const container=document.getElementById('qr-canvas');
+    container.innerHTML='';
+    qrInstance=new QRCode(container,{text:qrData,width:180,height:180,colorDark:'#004837',colorLight:'#FFFFFF',correctLevel:QRCode.CorrectLevel.M});
+  }
+  refresh();
+  let sec=30;
+  document.getElementById('timer').textContent=sec;
+  timerInterval=setInterval(()=>{
+    sec--;if(sec<=0){sec=30;refresh();}
+    document.getElementById('timer').textContent=sec;
+  },1000);
+}
+
+window.addEventListener('storage',e=>{if(e.key==='loyalty_customer'){const c=getC();if(c)render(c);}});
+setInterval(()=>{const c=getC();if(c)render(c);},2000);
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const c=getC();
+  if(c){document.getElementById('setup').classList.add('hidden');render(c);startQR(c);publishToLeaderboard(c);}
+});
+</script>
+</body>
+</html>
